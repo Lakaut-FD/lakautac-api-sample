@@ -209,7 +209,7 @@
     // ==============
     // 1) Keycloak
     // ==============
-    const keycloak = new Keycloak('/keycloak.json');
+    const keycloak = new Keycloak('./keycloak.json');
     let tokenActivo = "";
 
     document.getElementById("btnLogout").addEventListener("click", () => {
