@@ -122,9 +122,7 @@
               <div>
                 <label for="optFontName" class="block text-sm font-medium mb-1">fontName</label>
                 <select id="optFontName" class="border border-gray-300 rounded w-full p-2 text-sm">
-                  <option value="Serif">Serif</option>
-                  <option value="Sans">Sans</option>
-                  <option value="Monospaced">Monospaced</option>
+                  <option value="Serif">San Serif</option>
                 </select>
               </div>
               <!-- fontSize -->
@@ -132,15 +130,13 @@
                 <label for="optFontSize" class="block text-sm font-medium mb-1">fontSize</label>
                 <input type="number" id="optFontSize"
                        class="border border-gray-300 rounded w-full p-2 text-sm"
-                       value="12" />
+                       value="10" />
               </div>
               <!-- fontStyle -->
               <div>
                 <label for="optFontStyle" class="block text-sm font-medium mb-1">fontStyle</label>
                 <select id="optFontStyle" class="border border-gray-300 rounded w-full p-2 text-sm">
                   <option value="PLAIN">PLAIN</option>
-                  <option value="BOLD">BOLD</option>
-                  <option value="ITALIC">ITALIC</option>
                 </select>
               </div>
               <!-- page -->
@@ -170,6 +166,22 @@
                 <input type="number" id="optY"
                        class="border border-gray-300 rounded w-full p-2 text-sm"
                        value="100" />
+              </div>
+              <!-- ancho Firma -->
+              <div>
+                <label for="anchoFirma" class="block text-sm font-medium mb-1">anchoFirma</label>
+                <select id="anchoFirma" class="border border-gray-300 rounded w-full p-2 text-sm">
+                  <option value="PEQUENIO">PEQUENIO</option>
+                  <option value="MEDIANO">MEDIANO</option>
+                  <option value="GRANDE">GRANDE</option>
+                </select>
+              </div>
+              <!-- Leyenda (opcional) -->
+              <div>
+                <label for="extraText" class="block text-sm font-medium mb-1">leyenda (opcional)</label>
+                <input type="text" id="extraText"
+                       class="border border-gray-300 rounded w-full p-2 text-sm"
+                       value="" />
               </div>
             </div>
           </div>
@@ -259,7 +271,7 @@
     async function cargarSolicitudes() {
       console.log("[DEBUG] Cargando solicitudes...");
       try {
-        const resp = await axios.get("https://www.lakautac.com.ar/firma-api/solicitudes", {
+        const resp = await axios.get("https://desa.lakaut.com/firma-api/solicitudes", {
           headers: { Authorization: `Bearer ${tokenActivo}` }
         });
         console.log("[DEBUG] Solicitudes recibidas:", resp.data);
@@ -295,14 +307,16 @@
       solicitudId: 0,
       fontColor: "BLACK",
       fontName: "Serif",
-      fontSize: 12,
+      fontSize: 10,
       fontStyle: "PLAIN",
       page: 1,
       zoomPercent: 100,
       x: 100,
       y: 100,
       certificateOptions: {},
-      restriccion: "NO_VALUE"
+      restriccion: "NO_VALUE",
+      anchoFirma: "PEQUENIO",
+      extraText:""
     };
 
     const previewArea = document.getElementById("optionsPreview");
@@ -322,6 +336,8 @@
       optionsObj.zoomPercent  = parseInt(document.getElementById("optZoom").value, 10) || 100;
       optionsObj.x            = parseInt(document.getElementById("optX").value, 10) || 100;
       optionsObj.y            = parseInt(document.getElementById("optY").value, 10) || 100;
+      optionsObj.anchoFirma   = document.getElementById("anchoFirma").value;
+      optionsObj.extraText    = document.getElementById("extraText").value;
 
       // Clave se maneja aparte, no la ponemos en la preview
       const previewCopy = { ...optionsObj, password: "[OCULTA]" };
@@ -370,7 +386,7 @@
 
       // 6) POST /solicitudes/firmar con Axios
       try {
-        const urlFirma = "https://www.lakautac.com.ar/firma-api/solicitudes/firmar";
+        const urlFirma = "https://desa.lakaut.com/firma-api/solicitudes/firmar";
         console.log("[DEBUG] POST =>", urlFirma);
 
         const resp = await axios.post(urlFirma, formData, {
@@ -401,7 +417,11 @@
       } catch (error) {
         if (error.response) {
           console.error("[DEBUG] Error al firmar:", error.response.status, error.response.data);
-          alert(`Error al firmar: ${error.response.status} - ${error.response.data}`);
+          //alert(`Error al firmar: ${error.response.status} - ${error.response.data}`);
+          const mensajeError = new TextDecoder("utf-8").decode(error.response.data);
+          console.error("[DEBUG] Error al firmar:", error.response.status, mensajeError);
+          alert(`Error al firmar: ${error.response.status} - ${mensajeError}`);
+
         } else {
           console.error("[DEBUG] Error de red:", error);
           alert("Error de red al firmar: " + error);
