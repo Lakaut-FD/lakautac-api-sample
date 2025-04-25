@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "express": "^4.21.2",
+    "http-proxy-middleware": "^3.0.5",
     "keycloak-js": "^19.0.3"
   },
   "devDependencies": {

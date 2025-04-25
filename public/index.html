@@ -386,7 +386,7 @@
 
       // 6) POST /solicitudes/firmar con Axios
       try {
-        const urlFirma = "https://desa.lakaut.com/firma-api/solicitudes/firmar";
+        const urlFirma = "https://desa.lakaut.com/solicitudes/firmar";
         console.log("[DEBUG] POST =>", urlFirma);
 
         const resp = await axios.post(urlFirma, formData, {
@@ -417,11 +417,7 @@
       } catch (error) {
         if (error.response) {
           console.error("[DEBUG] Error al firmar:", error.response.status, error.response.data);
-          //alert(`Error al firmar: ${error.response.status} - ${error.response.data}`);
-          const mensajeError = new TextDecoder("utf-8").decode(error.response.data);
-          console.error("[DEBUG] Error al firmar:", error.response.status, mensajeError);
-          alert(`Error al firmar: ${error.response.status} - ${mensajeError}`);
-
+          alert(`Error al firmar: ${error.response.status} - ${error.response.data}`);
         } else {
           console.error("[DEBUG] Error de red:", error);
           alert("Error de red al firmar: " + error);

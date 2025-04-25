@@ -1,15 +1,25 @@
-// server.js
-
 const express = require('express');
 const path = require('path');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
-// Creamos la app de Express
 const app = express();
 
-// Servimos la carpeta "public" con el index.html, keycloak.json, etc.
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Función para iniciar el servidor en un puerto libre
+app.use('/firma-api', (req, res, next) => {
+  console.log("Redirigiendo a:", req.url);
+  next();
+});
+
+app.use('/firma-api', createProxyMiddleware({
+  target: 'https://desa.lakaut.com',
+  changeOrigin: true,
+  pathRewrite: {
+    '^/firma-api': '/firma-api'
+  }
+}));
+
+// Iniciar servidor
 function startServerOnFreePort(port) {
   const server = app.listen(port, () => {
     console.log(`Servidor corriendo en http://localhost:${port}`);
