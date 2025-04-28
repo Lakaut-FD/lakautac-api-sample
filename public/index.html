@@ -272,7 +272,10 @@
       console.log("[DEBUG] Cargando solicitudes...");
       try {
         const resp = await axios.get("https://desa.lakaut.com/firma-api/solicitudes", {
-          headers: { Authorization: `Bearer ${tokenActivo}` }
+          headers: { 
+            Authorization: `Bearer ${tokenActivo}`,
+            Accept: 'application/json'
+          }
         });
         console.log("[DEBUG] Solicitudes recibidas:", resp.data);
         statusDiv.innerText = "Solicitudes cargadas.";
@@ -386,14 +389,15 @@
 
       // 6) POST /solicitudes/firmar con Axios
       try {
-        const urlFirma = "https://desa.lakaut.com/solicitudes/firmar";
+        const urlFirma = "https://desa.lakaut.com/firma-api/solicitudes/firmar";
         console.log("[DEBUG] POST =>", urlFirma);
 
         const resp = await axios.post(urlFirma, formData, {
           headers: {
             Authorization: `Bearer ${tokenActivo}`
           },
-          responseType: "arraybuffer" // Recibir PDF binario
+          responseType: "arraybuffer",
+          timeout: 30000  // 30 segundos
         });
 
         console.log("[DEBUG] Respuesta status:", resp.status);
@@ -416,11 +420,18 @@
         alert("Firma realizada con éxito. Se descargó el PDF firmado.");
       } catch (error) {
         if (error.response) {
-          console.error("[DEBUG] Error al firmar:", error.response.status, error.response.data);
-          alert(`Error al firmar: ${error.response.status} - ${error.response.data}`);
+          console.error("[DEBUG] Estado de error:", error.response.status);
+          if (error.response.status === 503) {
+            alert("El servicio está temporalmente no disponible. Por favor intente más tarde.");
+          } else {
+            alert(`Error al firmar: ${error.response.status}`);
+          }
+        } else if (error.request) {
+          console.error("[DEBUG] Error de solicitud:", error.request);
+          alert("No se recibió respuesta del servidor. Verifique su conexión.");
         } else {
-          console.error("[DEBUG] Error de red:", error);
-          alert("Error de red al firmar: " + error);
+          console.error("[DEBUG] Error general:", error.message);
+          alert("Error al preparar la solicitud: " + error.message);
         }
       }
     });
