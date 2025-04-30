@@ -60,14 +60,17 @@
       <form id="firmaForm" class="space-y-4">
         <!-- Subir PDF -->
         <div>
-          <label for="pdfFile" class="block text-sm font-medium mb-1">
-            Documento PDF:
-          </label>
+          <label for="pdfFile" class="block text-sm font-medium mb-1">Documento PDF:</label>
           <input type="file"
-                 id="pdfFile"
-                 accept="application/pdf"
-                 required
-                 class="block w-full text-sm text-gray-900 border border-gray-300 rounded" />
+                id="pdfFile"
+                accept="application/pdf"
+                required
+                class="block w-full text-sm text-gray-900 border border-gray-300 rounded" />
+        </div>
+
+        <!-- Vista previa del PDF -->
+        <div id="pdfViewer" class="hidden mt-4 border rounded overflow-auto max-h-[600px] bg-gray-100 p-4 space-y-4">
+          <!-- Aquí se insertarán múltiples canvas, uno por página -->
         </div>
 
         <!-- Clave del Certificado -->
@@ -108,44 +111,13 @@
                class="hidden"
                aria-labelledby="heading-opciones">
             <div class="p-4 border border-t-0 border-gray-200 grid grid-cols-2 gap-4">
-              <!-- fontColor -->
-              <div>
-                <label for="optFontColor" class="block text-sm font-medium mb-1">fontColor</label>
-                <select id="optFontColor" class="border border-gray-300 rounded w-full p-2 text-sm">
-                  <option value="BLACK">BLACK</option>
-                  <option value="BLUE">BLUE</option>
-                  <option value="RED">RED</option>
-                  <option value="GRAY">GRAY</option>
-                </select>
-              </div>
-              <!-- fontName -->
-              <div>
-                <label for="optFontName" class="block text-sm font-medium mb-1">fontName</label>
-                <select id="optFontName" class="border border-gray-300 rounded w-full p-2 text-sm">
-                  <option value="Serif">San Serif</option>
-                </select>
-              </div>
-              <!-- fontSize -->
-              <div>
-                <label for="optFontSize" class="block text-sm font-medium mb-1">fontSize</label>
-                <input type="number" id="optFontSize"
-                       class="border border-gray-300 rounded w-full p-2 text-sm"
-                       value="10" />
-              </div>
-              <!-- fontStyle -->
-              <div>
-                <label for="optFontStyle" class="block text-sm font-medium mb-1">fontStyle</label>
-                <select id="optFontStyle" class="border border-gray-300 rounded w-full p-2 text-sm">
-                  <option value="PLAIN">PLAIN</option>
-                </select>
-              </div>
               <!-- page -->
               <div>
-                <label for="optPage" class="block text-sm font-medium mb-1">page</label>
-                <input type="number" id="optPage"
-                       class="border border-gray-300 rounded w-full p-2 text-sm"
-                       value="1" />
+                <label for="optPage" class="block text-sm font-medium mb-1">Página a firmar</label>
+                <select id="optPage" class="border border-gray-300 rounded w-full p-2 text-sm">
+                </select>
               </div>
+
               <!-- zoomPercent -->
               <div>
                 <label for="optZoom" class="block text-sm font-medium mb-1">zoomPercent</label>
@@ -183,10 +155,29 @@
                        class="border border-gray-300 rounded w-full p-2 text-sm"
                        value="" />
               </div>
+              <!-- Subir Imagen -->
+              <div>
+                <label for="image" class="block text-sm font-medium mb-1">Imagen (opcional):</label>
+                <input type="file" id="image"
+                      accept="image/jpeg, image/png"
+                      class="block w-full text-sm text-gray-900 border border-gray-300 rounded p-2 h-10" />
+              </div>
+              <!-- estiloImagen -->
+              <div>
+                <label for="stampPosition" class="block text-sm font-medium mb-1">posicionImagen</label>
+                <select id="stampPosition"
+                        class="border border-gray-300 rounded w-full p-2 text-sm h-10">
+                  <option value="above">Arriba</option>
+                  <option value="below">Abajo</option>
+                  <option value="left">A la izquierda</option>
+                  <option value="right">A la derecha</option>
+                </select>
+              </div>
             </div>
           </div>
-        </div><!-- Fin acordeón -->
-
+        </div>        
+        <!-- Fin acordeón -->   
+        
         <!-- Botón para actualizar vista previa -->
         <button type="button" id="btnUpdateOptions"
                 class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 text-sm">
@@ -216,6 +207,8 @@
 
   <!-- Keycloak JS -->
   <script src="https://cdn.jsdelivr.net/npm/keycloak-js@19.0.3/dist/keycloak.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.111/pdf.min.js"></script>
 
   <script>
     // ==============
@@ -271,7 +264,7 @@
     async function cargarSolicitudes() {
       console.log("[DEBUG] Cargando solicitudes...");
       try {
-        const resp = await axios.get("https://desa.lakaut.com/firma-api/solicitudes", {
+        const resp = await axios.get("https://www.lakautac.com.ar/firma-api/solicitudes", {
           headers: { 
             Authorization: `Bearer ${tokenActivo}`,
             Accept: 'application/json'
@@ -319,7 +312,8 @@
       certificateOptions: {},
       restriccion: "NO_VALUE",
       anchoFirma: "PEQUENIO",
-      extraText:""
+      extraText: "",
+      stampPosition: "left"
     };
 
     const previewArea = document.getElementById("optionsPreview");
@@ -331,16 +325,13 @@
       optionsObj.solicitudId = parseInt(solicitudesSelect.value, 10) || 0;
 
       // Tomar valores de inputs (accordion)
-      optionsObj.fontColor    = document.getElementById("optFontColor").value;
-      optionsObj.fontName     = document.getElementById("optFontName").value;
-      optionsObj.fontSize     = parseInt(document.getElementById("optFontSize").value, 10) || 12;
-      optionsObj.fontStyle    = document.getElementById("optFontStyle").value;
-      optionsObj.page         = parseInt(document.getElementById("optPage").value, 10) || 1;
-      optionsObj.zoomPercent  = parseInt(document.getElementById("optZoom").value, 10) || 100;
-      optionsObj.x            = parseInt(document.getElementById("optX").value, 10) || 100;
-      optionsObj.y            = parseInt(document.getElementById("optY").value, 10) || 100;
-      optionsObj.anchoFirma   = document.getElementById("anchoFirma").value;
-      optionsObj.extraText    = document.getElementById("extraText").value;
+      optionsObj.page          = parseInt(document.getElementById("optPage").value, 10) || 1;
+      optionsObj.zoomPercent   = parseInt(document.getElementById("optZoom").value, 10) || 100;
+      optionsObj.x             = parseInt(document.getElementById("optX").value, 10) || 100;
+      optionsObj.y             = parseInt(document.getElementById("optY").value, 10) || 100;
+      optionsObj.anchoFirma    = document.getElementById("anchoFirma").value;
+      optionsObj.extraText     = document.getElementById("extraText").value;
+      optionsObj.stampPosition = document.getElementById("stampPosition").value;
 
       // Clave se maneja aparte, no la ponemos en la preview
       const previewCopy = { ...optionsObj, password: "[OCULTA]" };
@@ -385,11 +376,15 @@
       // 5) Crear FormData
       const formData = new FormData();
       formData.append("file", pdfFile, pdfFile.name);
-      formData.append("options", JSON.stringify(optionsObj));
+      formData.append("options", new Blob([JSON.stringify(optionsObj)], { type: "application/json" }));
+      const image = document.getElementById("image").files[0];
+      if (image) {
+        formData.append("image", image, image.name);
+      }
 
       // 6) POST /solicitudes/firmar con Axios
       try {
-        const urlFirma = "https://desa.lakaut.com/firma-api/solicitudes/firmar";
+        const urlFirma = "https://www.lakautac.com.ar/firma-api/solicitudes/firmar";
         console.log("[DEBUG] POST =>", urlFirma);
 
         const resp = await axios.post(urlFirma, formData, {
@@ -435,6 +430,65 @@
         }
       }
     });
+
+    const pdfFileInput = document.getElementById("pdfFile");
+    const pdfViewer = document.getElementById("pdfViewer");
+    const pageSelect = document.getElementById("optPage");
+
+    let pdfDoc = null;
+
+    const renderAllPages = async () => {
+      pdfViewer.innerHTML = ""; // Limpia visor
+
+      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+        const page = await pdfDoc.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 1.5 });
+
+        const canvas = document.createElement("canvas");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.className = "border shadow";
+
+        const context = canvas.getContext("2d");
+        await page.render({
+          canvasContext: context,
+          viewport: viewport
+        }).promise;
+
+        pdfViewer.appendChild(canvas);
+      }
+    };
+
+    const populatePageSelect = (numPages) => {
+      pageSelect.innerHTML = "";
+      for (let i = 1; i <= numPages; i++) {
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = `Página ${i}`;
+        pageSelect.appendChild(option);
+      }
+    };
+
+    pdfFileInput.addEventListener("change", function (e) {
+      const file = e.target.files[0];
+      if (!file || file.type !== "application/pdf") {
+        pdfViewer.classList.add("hidden");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async function () {
+        const typedArray = new Uint8Array(reader.result);
+        pdfDoc = await pdfjsLib.getDocument(typedArray).promise;
+
+        populatePageSelect(pdfDoc.numPages);
+        pageSelect.value = "1";
+        await renderAllPages();
+        pdfViewer.classList.remove("hidden");
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
   </script>
 </body>
 </html>
