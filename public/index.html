@@ -264,7 +264,7 @@
     async function cargarSolicitudes() {
       console.log("[DEBUG] Cargando solicitudes...");
       try {
-        const resp = await axios.get("https://www.lakautac.com.ar/firma-api/solicitudes", {
+        const resp = await axios.get("https://desa.lakaut.com/firma-api/solicitudes", {
           headers: { 
             Authorization: `Bearer ${tokenActivo}`,
             Accept: 'application/json'
@@ -384,7 +384,7 @@
 
       // 6) POST /solicitudes/firmar con Axios
       try {
-        const urlFirma = "https://www.lakautac.com.ar/firma-api/solicitudes/firmar";
+        const urlFirma = "https://desa.lakaut.com/firma-api/solicitudes/firmar";
         console.log("[DEBUG] POST =>", urlFirma);
 
         const resp = await axios.post(urlFirma, formData, {
