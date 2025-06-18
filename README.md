@@ -119,4 +119,168 @@ startServerOnFreePort(3000);
 - Inicia en **puerto 3000** o busca el siguiente si está ocupado.  
 - Sirve la carpeta `public/`, donde se ubican `index.html` y `keycloak.json`.
 
+## Documentación Detallada de la API
+
+A continuación se describen paso a paso todos los procesos implementados en `public/index.html` para autenticación, obtención de solicitudes y firma de documentos digitales.
+
+### 1. Requisitos previos
+
+- Node.js (v14+ recomendado)
+- Cuenta de usuario válida en el realm **firmanube** de Keycloak.
+- Archivo `public/keycloak.json` con configuración de Keycloak (ver sección 4).
+
+### 2. Instalación del proyecto
+
+1. Clonar repositorio:
+   ```bash
+   git clone https://github.com/Lakaut-FD/lakautac-api-sample.git
+   ```
+2. Entrar al directorio del proyecto:
+   ```bash
+   cd lakautac-api-sample
+   ```
+3. Instalar dependencias:
+   ```bash
+   npm install
+   ```
+4. Iniciar servidor de desarrollo:
+   ```bash
+   npm start
+   ```
+   - El servidor se levantará en **http://localhost:3000** (o siguiente puerto disponible).
+
+### 3. Flujo general de la aplicación
+
+Al acceder a la aplicación, `index.html` ejecuta los siguientes pasos:
+
+#### 3.1 Inicialización y autenticación con Keycloak
+
+```js
+const keycloak = new Keycloak('./keycloak.json');
+keycloak.init({ onLoad: 'login-required', checkLoginIframe: false })
+  .then(authenticated => { ... })
+  .catch(err => { ... });
+```
+
+- Se redirige al usuario al **login de Keycloak** si no está autenticado.
+- `keycloak.token` almacena el **token JWT** necesario para llamadas a la API.
+- Se configura un **intervalo** para renovar el token cada 60 segundos.
+- Botón **Cerrar Sesión** (`btnLogout`) invoca `keycloak.logout()`.
+
+#### 3.2 Obtención de solicitudes disponibles
+
+```js
+axios.get('https://www.lakautac.com.ar/firma-api/solicitudes', {
+  headers: { Authorization: `Bearer ${tokenActivo}` }
+});
+```
+
+- Se realiza un **GET** a `/solicitudes` con el token en el header.
+- La respuesta es un objeto `{ solicitudId: descripción }`.
+- Se carga el elemento `<select id="solicitudesSelect">` con estas opciones.
+- Botón **Refrescar** (`btnRefreshSolicitudes`) recarga esta lista.
+
+#### 3.3 Configuración de opciones de firma
+
+Las opciones se definen en el objeto `optionsObj`:
+
+```js
+let optionsObj = {
+  solicitudId: 0,
+  fontColor: 'BLACK',
+  fontName: 'Serif',
+  fontSize: 12,
+  fontStyle: 'PLAIN',
+  page: 1,
+  zoomPercent: 100,
+  x: 100,
+  y: 100,
+  certificateOptions: {},
+  restriccion: 'NO_VALUE'
+};
+```
+
+- Un acordeón (Flowbite) permite ajustar cada parámetro.
+- Al pulsar **Previsualizar / Actualizar Options**, se llama a `updateOptionsFromUI()`, que:
+  - Lee valores de los inputs.
+  - Actualiza `optionsObj` y muestra un **JSON** en `<textarea id="optionsPreview">`.
+
+#### 3.4 Firma del documento
+
+```js
+firmaForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  // Validar PDF y contraseña
+  // Crear FormData con file y options
+  const resp = await axios.post(
+    'https://www.lakautac.com.ar/firma-api/solicitudes/firmar',
+    formData,
+    {
+      headers: { Authorization: `Bearer ${tokenActivo}` },
+      responseType: 'arraybuffer'
+    }
+  );
+  // Descargar PDF firmado
+});
+```
+
+1. Se valida que el usuario haya seleccionado un PDF y proporcionado la contraseña del certificado.
+2. `updateOptionsFromUI()` actualiza `optionsObj` e inserta `optionsObj.password`.
+3. Se construye `FormData` con el archivo y el JSON de opciones.
+4. Se envía **POST** a `/solicitudes/firmar`.
+5. El servidor devuelve el PDF firmado como **arraybuffer**, que se descarga automáticamente.
+
+### 4. Configuración de Keycloak
+
+Ubique `public/keycloak.json` y compruebe los siguientes parámetros:
+
+```json
+{
+  "realm": "firmanube",
+  "auth-server-url": "https://www.lakautac.com.ar/auth",
+  "ssl-required": "none",
+  "resource": "LakautNubeAPI",
+  "public-client": true,
+  "confidential-port": 0
+}
+```
+
+- `realm`: nombre del espacio de autenticación en Keycloak.
+- `auth-server-url`: URL del servidor Keycloak.
+- `resource`: identificador del cliente en Keycloak.
+
+### Adaptadores de Keycloak
+
+Keycloak ofrece adaptadores para múltiples entornos y lenguajes de programación, entre ellos:
+
+- Adaptador JavaScript (`keycloak-js`)
+- Adaptador Node.js (`keycloak-connect`)
+- Adaptador Angular (`keycloak-angular`)
+- Adaptador React (`keycloak-react`)
+- Adaptador Spring Boot (`keycloak-spring-boot-starter`)
+- Adaptador Quarkus (`quarkus-keycloak`)
+- Adaptador WildFly/EAP
+- Adaptador .NET (`keycloak-dotnet-adapter`)
+
+En esta demo se utiliza el adaptador JavaScript (`keycloak-js`), pero puedes escoger el adaptador que mejor se adapte a tu proyecto.
+
+### 5. Estructura de archivos
+
+```
+lakautac-api-sample/
+├─ package.json
+├─ server.js
+├─ public/
+│   ├─ index.html
+│   ├─ keycloak.json
+│   └─ assets/ (CSS, JS, imágenes)
+└─ README.md
+```
+
+### 6. Contribuciones y Soporte
+
+Pulsa **Fork** y envía **Pull Requests** para mejorar ejemplos o corregir errores. Si tienes dudas, abre un **Issue** en GitHub o contacta al equipo de soporte de Lakaut.
+
+---
+
 
