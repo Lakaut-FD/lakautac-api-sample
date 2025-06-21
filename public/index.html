@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <title>Firma Digital - Opciones Dinámicas</title>
@@ -11,12 +12,12 @@
   <!-- Axios - para peticiones HTTP -->
   <script src="https://cdn.jsdelivr.net/npm/axios@1.3.4/dist/axios.min.js"></script>
 </head>
+
 <body class="bg-gray-50 text-gray-800">
   <!-- Encabezado con logout -->
   <header class="bg-white shadow p-4 flex items-center justify-between">
     <h1 class="text-xl font-bold">Demo Firma Digital</h1>
-    <button id="btnLogout"
-            class="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+    <button id="btnLogout" class="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
       Cerrar Sesión
     </button>
   </header>
@@ -41,12 +42,10 @@
           <label for="solicitudesSelect" class="block text-sm font-medium mb-1">
             Solicitudes disponibles:
           </label>
-          <select id="solicitudesSelect"
-                  class="border border-gray-300 rounded w-full p-2 text-sm">
+          <select id="solicitudesSelect" class="border border-gray-300 rounded w-full p-2 text-sm">
           </select>
         </div>
-        <button id="btnRefreshSolicitudes"
-                class="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 text-sm">
+        <button id="btnRefreshSolicitudes" class="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 text-sm">
           Refrescar
         </button>
       </div>
@@ -63,11 +62,8 @@
           <label for="pdfFile" class="block text-sm font-medium mb-1">
             Documento PDF:
           </label>
-          <input type="file"
-                 id="pdfFile"
-                 accept="application/pdf"
-                 required
-                 class="block w-full text-sm text-gray-900 border border-gray-300 rounded" />
+          <input type="file" id="pdfFile" accept="application/pdf" required
+            class="block w-full text-sm text-gray-900 border border-gray-300 rounded" />
         </div>
 
         <!-- Clave del Certificado -->
@@ -75,38 +71,29 @@
           <label for="clave" class="block text-sm font-medium mb-1">
             Clave del certificado (requerida):
           </label>
-          <input type="password"
-                 id="clave"
-                 required
-                 placeholder="Escribe tu clave"
-                 class="block w-72 border border-gray-300 rounded p-2 text-sm" />
+          <input type="password" id="clave" required placeholder="Escribe tu clave"
+            class="block w-72 border border-gray-300 rounded p-2 text-sm" />
         </div>
 
         <!-- Acordeón para opciones - Flowbite -->
         <div class="overflow-hidden" data-accordion="collapse" id="accordionOpciones">
           <h2 id="heading-opciones">
             <button type="button"
-                    class="flex items-center justify-between w-full p-4 font-medium text-left text-gray-500 border border-gray-200 hover:bg-gray-100"
-                    data-accordion-target="#body-opciones"
-                    aria-expanded="false"
-                    aria-controls="body-opciones">
+              class="flex items-center justify-between w-full p-4 font-medium text-left text-gray-500 border border-gray-200 hover:bg-gray-100"
+              data-accordion-target="#body-opciones" aria-expanded="false" aria-controls="body-opciones">
               <span class="text-md font-semibold">
                 Configurar Opciones de Firma
               </span>
-              <svg data-accordion-icon class="w-6 h-6 shrink-0 transition-transform"
-                fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd"
-                  d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 
+              <svg data-accordion-icon class="w-6 h-6 shrink-0 transition-transform" fill="currentColor"
+                viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 
                    0 011.08 1.04l-4.25 4.25a.75.75 
                    0 01-1.06 0l-4.25-4.25a.75.75 
-                   0 01.02-1.06z"
-                  clip-rule="evenodd"></path>
+                   0 01.02-1.06z" clip-rule="evenodd"></path>
               </svg>
             </button>
           </h2>
-          <div id="body-opciones"
-               class="hidden"
-               aria-labelledby="heading-opciones">
+          <div id="body-opciones" class="hidden" aria-labelledby="heading-opciones">
             <div class="p-4 border border-t-0 border-gray-200 grid grid-cols-2 gap-4">
               <!-- fontColor -->
               <div>
@@ -130,9 +117,8 @@
               <!-- fontSize -->
               <div>
                 <label for="optFontSize" class="block text-sm font-medium mb-1">fontSize</label>
-                <input type="number" id="optFontSize"
-                       class="border border-gray-300 rounded w-full p-2 text-sm"
-                       value="12" />
+                <input type="number" id="optFontSize" class="border border-gray-300 rounded w-full p-2 text-sm"
+                  value="12" />
               </div>
               <!-- fontStyle -->
               <div>
@@ -146,30 +132,23 @@
               <!-- page -->
               <div>
                 <label for="optPage" class="block text-sm font-medium mb-1">page</label>
-                <input type="number" id="optPage"
-                       class="border border-gray-300 rounded w-full p-2 text-sm"
-                       value="1" />
+                <input type="number" id="optPage" class="border border-gray-300 rounded w-full p-2 text-sm" value="1" />
               </div>
               <!-- zoomPercent -->
               <div>
                 <label for="optZoom" class="block text-sm font-medium mb-1">zoomPercent</label>
-                <input type="number" id="optZoom"
-                       class="border border-gray-300 rounded w-full p-2 text-sm"
-                       value="100" />
+                <input type="number" id="optZoom" class="border border-gray-300 rounded w-full p-2 text-sm"
+                  value="100" />
               </div>
               <!-- x -->
               <div>
                 <label for="optX" class="block text-sm font-medium mb-1">x</label>
-                <input type="number" id="optX"
-                       class="border border-gray-300 rounded w-full p-2 text-sm"
-                       value="100" />
+                <input type="number" id="optX" class="border border-gray-300 rounded w-full p-2 text-sm" value="100" />
               </div>
               <!-- y -->
               <div>
                 <label for="optY" class="block text-sm font-medium mb-1">y</label>
-                <input type="number" id="optY"
-                       class="border border-gray-300 rounded w-full p-2 text-sm"
-                       value="100" />
+                <input type="number" id="optY" class="border border-gray-300 rounded w-full p-2 text-sm" value="100" />
               </div>
             </div>
           </div>
@@ -177,7 +156,7 @@
 
         <!-- Botón para actualizar vista previa -->
         <button type="button" id="btnUpdateOptions"
-                class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 text-sm">
+          class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 text-sm">
           Previsualizar / Actualizar Options
         </button>
 
@@ -187,14 +166,12 @@
             Vista previa de “options” (clave oculta):
           </label>
           <textarea id="optionsPreview" rows="6"
-                    class="block w-full border border-gray-300 rounded p-2 text-sm bg-gray-50"
-                    readonly></textarea>
+            class="block w-full border border-gray-300 rounded p-2 text-sm bg-gray-50" readonly></textarea>
         </div>
 
         <!-- Botón para firmar -->
         <div>
-          <button type="submit"
-                  class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
             Firmar Documento
           </button>
         </div>
@@ -218,26 +195,36 @@
 
     const statusDiv = document.getElementById("status");
     keycloak.init({
-      onLoad: 'login-required',
-      checkLoginIframe: false
+      onLoad: 'check-sso',  // ← Cambiar de 'login-required' a 'check-sso'
+      checkLoginIframe: false,
+      silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html'
     })
-    .then(authenticated => {
-      if (authenticated) {
-        statusDiv.innerText = "Autenticado con éxito. Cargando solicitudes...";
-        tokenActivo = keycloak.token;
-        // Mostrar secciones
-        document.getElementById("solicitudesCard").classList.remove("hidden");
-        document.getElementById("form-section").classList.remove("hidden");
-        // Cargar solicitudes
-        cargarSolicitudes();
-      } else {
-        statusDiv.innerText = "No se pudo autenticar con Keycloak.";
-      }
-    })
-    .catch(err => {
-      statusDiv.innerText = "Error al inicializar Keycloak: " + err;
-      console.error("[DEBUG] Keycloak error:", err);
-    });
+      .then(authenticated => {
+        if (authenticated) {
+          console.log("[DEBUG] Usuario ya autenticado");
+          statusDiv.innerText = "Autenticado con éxito. Cargando solicitudes...";
+          tokenActivo = keycloak.token;
+          document.getElementById("solicitudesCard").classList.remove("hidden");
+          document.getElementById("form-section").classList.remove("hidden");
+          cargarSolicitudes();
+        } else {
+          console.log("[DEBUG] Usuario no autenticado, iniciando login...");
+          statusDiv.innerText = "Redirigiendo al login...";
+          keycloak.login();
+        }
+      })
+      .catch(err => {
+        console.error("[DEBUG] Error:", err);
+        // Si hay error pero está autenticado, seguir igual
+        if (keycloak.authenticated) {
+          tokenActivo = keycloak.token;
+          document.getElementById("solicitudesCard").classList.remove("hidden");
+          document.getElementById("form-section").classList.remove("hidden");
+          cargarSolicitudes();
+        } else {
+          statusDiv.innerText = "Error al inicializar Keycloak: " + err;
+        }
+      });
 
     // Renovar token cada 60 seg
     setInterval(() => {
@@ -314,14 +301,14 @@
       optionsObj.solicitudId = parseInt(solicitudesSelect.value, 10) || 0;
 
       // Tomar valores de inputs (accordion)
-      optionsObj.fontColor    = document.getElementById("optFontColor").value;
-      optionsObj.fontName     = document.getElementById("optFontName").value;
-      optionsObj.fontSize     = parseInt(document.getElementById("optFontSize").value, 10) || 12;
-      optionsObj.fontStyle    = document.getElementById("optFontStyle").value;
-      optionsObj.page         = parseInt(document.getElementById("optPage").value, 10) || 1;
-      optionsObj.zoomPercent  = parseInt(document.getElementById("optZoom").value, 10) || 100;
-      optionsObj.x            = parseInt(document.getElementById("optX").value, 10) || 100;
-      optionsObj.y            = parseInt(document.getElementById("optY").value, 10) || 100;
+      optionsObj.fontColor = document.getElementById("optFontColor").value;
+      optionsObj.fontName = document.getElementById("optFontName").value;
+      optionsObj.fontSize = parseInt(document.getElementById("optFontSize").value, 10) || 12;
+      optionsObj.fontStyle = document.getElementById("optFontStyle").value;
+      optionsObj.page = parseInt(document.getElementById("optPage").value, 10) || 1;
+      optionsObj.zoomPercent = parseInt(document.getElementById("optZoom").value, 10) || 100;
+      optionsObj.x = parseInt(document.getElementById("optX").value, 10) || 100;
+      optionsObj.y = parseInt(document.getElementById("optY").value, 10) || 100;
 
       // Clave se maneja aparte, no la ponemos en la preview
       const previewCopy = { ...optionsObj, password: "[OCULTA]" };
@@ -410,4 +397,5 @@
     });
   </script>
 </body>
+
 </html>
