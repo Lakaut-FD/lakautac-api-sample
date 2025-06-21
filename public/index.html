@@ -179,8 +179,8 @@
     </div>
   </section>
 
-  <!-- Keycloak JS -->
-  <script src="https://cdn.jsdelivr.net/npm/keycloak-js@19.0.3/dist/keycloak.min.js"></script>
+  <!-- Keycloak JS - Actualizado a versión compatible con servidor 26 -->
+  <script src="https://cdn.jsdelivr.net/npm/keycloak-js@26.0.7/dist/keycloak.min.js"></script>
 
   <script>
     // ==============
@@ -195,60 +195,38 @@
 
     const statusDiv = document.getElementById("status");
     
-    // Configuración recomendada por Keycloak para SPAs
+    // Configuración para Keycloak 26 - Más simple y robusta
     keycloak.init({
-      onLoad: 'check-sso',
+      onLoad: 'login-required',
       checkLoginIframe: false,
-      silentCheckSsoRedirectUri: null,
-      responseMode: 'fragment',
-      flow: 'standard'
+      pkceMethod: 'S256'  // PKCE es recomendado en versiones nuevas
     })
     .then(authenticated => {
-      console.log("[DEBUG] Keycloak init completado, authenticated:", authenticated);
-      if (authenticated) {
-        console.log("[DEBUG] Usuario autenticado correctamente");
-        console.log("[DEBUG] Token exists:", keycloak.token ? "SÍ" : "NO");
-        console.log("[DEBUG] User info:", keycloak.tokenParsed);
-        
+      console.log("[DEBUG] Keycloak 26 init exitoso!");
+      console.log("[DEBUG] Authenticated:", authenticated);
+      console.log("[DEBUG] Token:", keycloak.token ? "EXISTS" : "MISSING");
+      
+      if (authenticated && keycloak.token) {
+        console.log("[DEBUG] ✅ Login exitoso con Keycloak 26");
         statusDiv.innerText = "Autenticado con éxito. Cargando solicitudes...";
         tokenActivo = keycloak.token;
+        
         document.getElementById("solicitudesCard").classList.remove("hidden");
         document.getElementById("form-section").classList.remove("hidden");
         cargarSolicitudes();
       } else {
-        console.log("[DEBUG] Usuario no autenticado, iniciando login...");
-        statusDiv.innerText = "Redirigiendo al login...";
-        // Usar setTimeout para evitar el loop inmediato
-        setTimeout(() => {
-          keycloak.login();
-        }, 1000);
+        console.log("[DEBUG] ❌ No autenticado");
+        statusDiv.innerText = "Error de autenticación.";
       }
     })
     .catch(err => {
-      console.error("[DEBUG] Error en Keycloak init:", err);
-      console.error("[DEBUG] Error type:", typeof err);
-      console.error("[DEBUG] Error message:", err?.message);
-      console.error("[DEBUG] Error stack:", err?.stack);
-      
-      // Verificar si a pesar del error tenemos token
-      if (keycloak.token) {
-        console.log("[DEBUG] Token disponible a pesar del error, continuando...");
-        statusDiv.innerText = "Autenticado (con advertencias). Cargando solicitudes...";
-        tokenActivo = keycloak.token;
-        document.getElementById("solicitudesCard").classList.remove("hidden");
-        document.getElementById("form-section").classList.remove("hidden");
-        cargarSolicitudes();
-      } else {
-        statusDiv.innerText = "Error de autenticación: " + (err?.message || String(err));
-        console.log("[DEBUG] No hay token disponible, mostrando botón para reintentar");
-        // Mostrar un botón para reintentar login manualmente
-        statusDiv.innerHTML = `
-          <div>Error de autenticación: ${err?.message || String(err)}</div>
-          <button onclick="keycloak.login()" class="mt-2 bg-blue-500 text-white px-3 py-1 rounded">
-            Intentar Login Nuevamente
-          </button>
-        `;
-      }
+      console.error("[DEBUG] Error Keycloak 26:", err);
+      statusDiv.innerHTML = `
+        <div>Error: ${err.message || String(err)}</div>
+        <button onclick="location.reload()" class="mt-2 bg-blue-500 text-white px-3 py-1 rounded">
+          Reintentar
+        </button>
+      `;
     });
 
     // Renovar token cada 60 seg
