@@ -163,7 +163,7 @@
         <!-- Vista previa de JSON (sin exponer la password) -->
         <div>
           <label class="block text-sm font-medium mt-4 mb-1">
-            Vista previa de “options” (clave oculta):
+            Vista previa de "options" (clave oculta):
           </label>
           <textarea id="optionsPreview" rows="6"
             class="block w-full border border-gray-300 rounded p-2 text-sm bg-gray-50" readonly></textarea>
@@ -194,57 +194,77 @@
     });
 
     const statusDiv = document.getElementById("status");
+    
+    // Configuración recomendada por Keycloak para SPAs
     keycloak.init({
-  onLoad: 'login-required',
-  checkLoginIframe: false,
-  silentCheckSsoRedirectUri: null,
-  responseMode: 'query'
-})
-.then(authenticated => {
-  console.log("[DEBUG] Init successful, authenticated:", authenticated);
-  if (authenticated) {
-    console.log("[DEBUG] Token:", keycloak.token ? "exists" : "missing");
-    console.log("[DEBUG] User info:", keycloak.tokenParsed);
-    statusDiv.innerText = "Autenticado con éxito. Cargando solicitudes...";
-    tokenActivo = keycloak.token;
-    document.getElementById("solicitudesCard").classList.remove("hidden");
-    document.getElementById("form-section").classList.remove("hidden");
-    cargarSolicitudes();
-  } else {
-    console.log("[DEBUG] Not authenticated, but init was successful");
-    statusDiv.innerText = "No se pudo autenticar con Keycloak.";
-  }
-})
-.catch(err => {
-  console.error("[DEBUG] Keycloak init error (full object):", err);
-  console.error("[DEBUG] Error type:", typeof err);
-  console.error("[DEBUG] Error string:", String(err));
-  console.error("[DEBUG] Error stack:", err?.stack);
-  
-  statusDiv.innerText = "Error al inicializar Keycloak: " + String(err);
-  
-  // Verificar si hay token disponible a pesar del error
-  if (keycloak.token) {
-    console.log("[DEBUG] Token available despite error");
-    tokenActivo = keycloak.token;
-    document.getElementById("solicitudesCard").classList.remove("hidden");
-    document.getElementById("form-section").classList.remove("hidden");
-    cargarSolicitudes();
-  }
-});
+      onLoad: 'check-sso',
+      checkLoginIframe: false,
+      silentCheckSsoRedirectUri: null,
+      responseMode: 'fragment',
+      flow: 'standard'
+    })
+    .then(authenticated => {
+      console.log("[DEBUG] Keycloak init completado, authenticated:", authenticated);
+      if (authenticated) {
+        console.log("[DEBUG] Usuario autenticado correctamente");
+        console.log("[DEBUG] Token exists:", keycloak.token ? "SÍ" : "NO");
+        console.log("[DEBUG] User info:", keycloak.tokenParsed);
+        
+        statusDiv.innerText = "Autenticado con éxito. Cargando solicitudes...";
+        tokenActivo = keycloak.token;
+        document.getElementById("solicitudesCard").classList.remove("hidden");
+        document.getElementById("form-section").classList.remove("hidden");
+        cargarSolicitudes();
+      } else {
+        console.log("[DEBUG] Usuario no autenticado, iniciando login...");
+        statusDiv.innerText = "Redirigiendo al login...";
+        // Usar setTimeout para evitar el loop inmediato
+        setTimeout(() => {
+          keycloak.login();
+        }, 1000);
+      }
+    })
+    .catch(err => {
+      console.error("[DEBUG] Error en Keycloak init:", err);
+      console.error("[DEBUG] Error type:", typeof err);
+      console.error("[DEBUG] Error message:", err?.message);
+      console.error("[DEBUG] Error stack:", err?.stack);
+      
+      // Verificar si a pesar del error tenemos token
+      if (keycloak.token) {
+        console.log("[DEBUG] Token disponible a pesar del error, continuando...");
+        statusDiv.innerText = "Autenticado (con advertencias). Cargando solicitudes...";
+        tokenActivo = keycloak.token;
+        document.getElementById("solicitudesCard").classList.remove("hidden");
+        document.getElementById("form-section").classList.remove("hidden");
+        cargarSolicitudes();
+      } else {
+        statusDiv.innerText = "Error de autenticación: " + (err?.message || String(err));
+        console.log("[DEBUG] No hay token disponible, mostrando botón para reintentar");
+        // Mostrar un botón para reintentar login manualmente
+        statusDiv.innerHTML = `
+          <div>Error de autenticación: ${err?.message || String(err)}</div>
+          <button onclick="keycloak.login()" class="mt-2 bg-blue-500 text-white px-3 py-1 rounded">
+            Intentar Login Nuevamente
+          </button>
+        `;
+      }
+    });
 
     // Renovar token cada 60 seg
     setInterval(() => {
-      keycloak.updateToken(30)
-        .then(refreshed => {
-          if (refreshed) {
-            console.log("[DEBUG] Token renovado automáticamente");
-            tokenActivo = keycloak.token;
-          }
-        })
-        .catch(err => {
-          console.error("[DEBUG] No se pudo renovar el token:", err);
-        });
+      if (keycloak.token) {
+        keycloak.updateToken(30)
+          .then(refreshed => {
+            if (refreshed) {
+              console.log("[DEBUG] Token renovado automáticamente");
+              tokenActivo = keycloak.token;
+            }
+          })
+          .catch(err => {
+            console.error("[DEBUG] No se pudo renovar el token:", err);
+          });
+      }
     }, 60000);
 
     // ================================
@@ -253,11 +273,12 @@
     async function cargarSolicitudes() {
       console.log("[DEBUG] Cargando solicitudes...");
       try {
-        const resp = await axios.get("https://www.lakautac.com.ar/firma-api/solicitudes", {
+        // IMPORTANTE: URL sin www, igual que Keycloak
+        const resp = await axios.get("https://lakautac.com.ar/firma-api/solicitudes", {
           headers: { Authorization: `Bearer ${tokenActivo}` }
         });
         console.log("[DEBUG] Solicitudes recibidas:", resp.data);
-        statusDiv.innerText = "Solicitudes cargadas.";
+        statusDiv.innerText = "Solicitudes cargadas correctamente.";
         mostrarSolicitudes(resp.data);
       } catch (error) {
         if (error.response) {
@@ -265,6 +286,7 @@
           console.error("[DEBUG] GET /solicitudes error:", error.response.status, error.response.data);
         } else {
           statusDiv.innerText = "Error de red al obtener solicitudes.";
+          console.error("[DEBUG] Network error:", error);
         }
       }
     }
@@ -283,7 +305,7 @@
     document.getElementById("btnRefreshSolicitudes").addEventListener("click", cargarSolicitudes);
 
     // =================================
-    // 3) Manejo de objeto “options”
+    // 3) Manejo de objeto "options"
     // =================================
     let optionsObj = {
       solicitudId: 0,
@@ -364,7 +386,8 @@
 
       // 6) POST /solicitudes/firmar con Axios
       try {
-        const urlFirma = "https://www.lakautac.com.ar/firma-api/solicitudes/firmar";
+        // IMPORTANTE: URL sin www, igual que Keycloak
+        const urlFirma = "https://lakautac.com.ar/firma-api/solicitudes/firmar";
         console.log("[DEBUG] POST =>", urlFirma);
 
         const resp = await axios.post(urlFirma, formData, {
