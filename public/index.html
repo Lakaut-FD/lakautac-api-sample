@@ -195,37 +195,43 @@
 
     const statusDiv = document.getElementById("status");
     keycloak.init({
-      onLoad: 'check-sso',  // ← Cambiar de 'login-required' a 'check-sso'
-      checkLoginIframe: false,
-      silentCheckSsoRedirectUri: null,
-      responseMode: 'query'
-    })
-      .then(authenticated => {
-        if (authenticated) {
-          console.log("[DEBUG] Usuario ya autenticado");
-          statusDiv.innerText = "Autenticado con éxito. Cargando solicitudes...";
-          tokenActivo = keycloak.token;
-          document.getElementById("solicitudesCard").classList.remove("hidden");
-          document.getElementById("form-section").classList.remove("hidden");
-          cargarSolicitudes();
-        } else {
-          console.log("[DEBUG] Usuario no autenticado, iniciando login...");
-          statusDiv.innerText = "Redirigiendo al login...";
-          keycloak.login();
-        }
-      })
-      .catch(err => {
-        console.error("[DEBUG] Error:", err);
-        // Si hay error pero está autenticado, seguir igual
-        if (keycloak.authenticated) {
-          tokenActivo = keycloak.token;
-          document.getElementById("solicitudesCard").classList.remove("hidden");
-          document.getElementById("form-section").classList.remove("hidden");
-          cargarSolicitudes();
-        } else {
-          statusDiv.innerText = "Error al inicializar Keycloak: " + err;
-        }
-      });
+  onLoad: 'login-required',
+  checkLoginIframe: false,
+  silentCheckSsoRedirectUri: null,
+  responseMode: 'query'
+})
+.then(authenticated => {
+  console.log("[DEBUG] Init successful, authenticated:", authenticated);
+  if (authenticated) {
+    console.log("[DEBUG] Token:", keycloak.token ? "exists" : "missing");
+    console.log("[DEBUG] User info:", keycloak.tokenParsed);
+    statusDiv.innerText = "Autenticado con éxito. Cargando solicitudes...";
+    tokenActivo = keycloak.token;
+    document.getElementById("solicitudesCard").classList.remove("hidden");
+    document.getElementById("form-section").classList.remove("hidden");
+    cargarSolicitudes();
+  } else {
+    console.log("[DEBUG] Not authenticated, but init was successful");
+    statusDiv.innerText = "No se pudo autenticar con Keycloak.";
+  }
+})
+.catch(err => {
+  console.error("[DEBUG] Keycloak init error (full object):", err);
+  console.error("[DEBUG] Error type:", typeof err);
+  console.error("[DEBUG] Error string:", String(err));
+  console.error("[DEBUG] Error stack:", err?.stack);
+  
+  statusDiv.innerText = "Error al inicializar Keycloak: " + String(err);
+  
+  // Verificar si hay token disponible a pesar del error
+  if (keycloak.token) {
+    console.log("[DEBUG] Token available despite error");
+    tokenActivo = keycloak.token;
+    document.getElementById("solicitudesCard").classList.remove("hidden");
+    document.getElementById("form-section").classList.remove("hidden");
+    cargarSolicitudes();
+  }
+});
 
     // Renovar token cada 60 seg
     setInterval(() => {
