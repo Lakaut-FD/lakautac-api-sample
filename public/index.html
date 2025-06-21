@@ -197,7 +197,7 @@
     keycloak.init({
       onLoad: 'check-sso',  // ← Cambiar de 'login-required' a 'check-sso'
       checkLoginIframe: false,
-      silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
+      silentCheckSsoRedirectUri: null,
       responseMode: 'query'
     })
       .then(authenticated => {
