@@ -254,8 +254,8 @@
     async function cargarSolicitudes() {
       console.log("[DEBUG] Cargando solicitudes...");
       try {
-        // IMPORTANTE: URL sin www, igual que Keycloak
-        const resp = await axios.get("https://lakautac.com.ar/firma-api/solicitudes", {
+        // URL con www para que coincida con Keycloak
+        const resp = await axios.get("https://www.lakautac.com.ar/firma-api/solicitudes", {
           headers: { Authorization: `Bearer ${tokenActivo}` }
         });
         console.log("[DEBUG] Solicitudes recibidas:", resp.data);
@@ -367,8 +367,8 @@
 
       // 6) POST /solicitudes/firmar con Axios
       try {
-        // IMPORTANTE: URL sin www, igual que Keycloak
-        const urlFirma = "https://lakautac.com.ar/firma-api/solicitudes/firmar";
+        // URL con www para que coincida con Keycloak
+        const urlFirma = "https://www.lakautac.com.ar/firma-api/solicitudes/firmar";
         console.log("[DEBUG] POST =>", urlFirma);
 
         const resp = await axios.post(urlFirma, formData, {

@@ -1,6 +1,6 @@
 {
     "realm": "firmanube",
-    "auth-server-url": "https://lakautac.com.ar/auth",
+    "auth-server-url": "https://www.lakautac.com.ar/auth",
     "ssl-required": "all",
     "resource": "LakautNubeAPI",
     "public-client": true,
