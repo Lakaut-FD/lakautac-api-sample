@@ -2,81 +2,81 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Demo Firma Digital</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/flowbite@1.6.5/dist/flowbite.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios@1.3.4/dist/axios.min.js"></script>
-</head>
+  <title>Firma Digital - Demo Lakaut</title>
 
+  <!-- Tailwind (uso demo, no producción) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Axios para peticiones -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
 <body class="bg-gray-50 text-gray-800">
   <header class="bg-white shadow p-4 flex justify-between items-center">
-    <h1 class="text-xl font-bold">Firma Digital Demo</h1>
-    <button id="btnLogout" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Cerrar sesión</button>
+    <h1 class="text-xl font-bold">Demo Firma Digital</h1>
+    <button id="btnLogout" class="bg-red-600 text-white px-3 py-1 rounded">Cerrar Sesión</button>
   </header>
 
   <main class="container mx-auto mt-6 px-4">
     <div id="status" class="text-sm text-gray-700 mb-4">Inicializando Keycloak...</div>
 
-    <div id="solicitudesCard" class="hidden mb-6">
-      <label for="solicitudesSelect" class="block mb-2 text-sm font-medium">Solicitudes disponibles</label>
-      <select id="solicitudesSelect" class="border border-gray-300 rounded w-72 p-2 text-sm"></select>
-      <button id="btnRefreshSolicitudes" class="ml-4 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Refrescar</button>
-    </div>
+    <section id="form-section" class="hidden bg-white p-6 rounded shadow">
+      <h2 class="text-lg font-semibold mb-4">Firmar documento</h2>
 
-    <form id="firmaForm" class="hidden space-y-4">
-      <div>
-        <label for="pdfFile" class="block text-sm font-medium">Archivo PDF</label>
-        <input type="file" id="pdfFile" accept="application/pdf" required class="block w-full text-sm border rounded" />
-      </div>
+      <form id="firmaForm" class="space-y-4">
+        <input type="file" id="pdfFile" accept="application/pdf" required class="block w-full" />
 
-      <div>
-        <label for="clave" class="block text-sm font-medium">Clave del certificado</label>
-        <input type="password" id="clave" required class="block w-72 border p-2 rounded text-sm" />
-      </div>
+        <input type="password" id="clave" required placeholder="Clave del certificado" class="w-72 p-2 border rounded" />
 
-      <div>
-        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Firmar Documento</button>
-      </div>
-    </form>
+        <select id="solicitudesSelect" class="border p-2 w-full"></select>
+
+        <textarea id="optionsPreview" rows="5" class="w-full border p-2 bg-gray-100" readonly></textarea>
+
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Firmar Documento</button>
+      </form>
+    </section>
   </main>
 
   <script type="module">
     import Keycloak from 'https://cdn.jsdelivr.net/npm/keycloak-js@26.2.0/+esm';
 
     const keycloak = new Keycloak({
-      url: "https://www.lakautac.com.ar/auth",
-      realm: "firmanube",
-      clientId: "firmanube-web"
+      url: 'https://www.lakautac.com.ar/auth',
+      realm: 'firmanube',
+      clientId: 'LakautNubeAPI'
     });
 
-    const statusDiv = document.getElementById("status");
     let tokenActivo = "";
+    const status = document.getElementById("status");
+    const formSection = document.getElementById("form-section");
 
-    document.getElementById("btnLogout").addEventListener("click", () => keycloak.logout());
+    document.getElementById("btnLogout").onclick = () => keycloak.logout();
 
-    keycloak.init({ onLoad: 'login-required', pkceMethod: 'S256', checkLoginIframe: false })
-      .then(authenticated => {
-        if (authenticated && keycloak.token) {
-          tokenActivo = keycloak.token;
-          document.getElementById("solicitudesCard").classList.remove("hidden");
-          document.getElementById("firmaForm").classList.remove("hidden");
-          statusDiv.innerText = "Autenticado. Cargando solicitudes...";
-          cargarSolicitudes();
-        } else {
-          statusDiv.innerText = "Autenticación fallida.";
-        }
-      })
-      .catch(err => {
-        console.error("Error al inicializar Keycloak:", err);
-        statusDiv.innerText = "Error al conectar con el servidor de autenticación.";
-      });
-
-    setInterval(() => {
-      if (keycloak.token) {
-        keycloak.updateToken(30).then(refreshed => {
-          if (refreshed) tokenActivo = keycloak.token;
-        }).catch(err => console.warn("Token refresh error", err));
+    await keycloak.init({
+      onLoad: 'login-required',
+      pkceMethod: 'S256',
+      checkLoginIframe: false
+    }).then(authenticated => {
+      if (!authenticated) {
+        status.innerText = "❌ No autenticado";
+        return;
       }
+      tokenActivo = keycloak.token;
+      status.innerText = "✅ Autenticado con éxito. Token activo.";
+      formSection.classList.remove("hidden");
+      cargarSolicitudes();
+    }).catch(err => {
+      console.error("Keycloak init error:", err);
+      status.innerText = "Error al inicializar Keycloak.";
+    });
+
+    // Renovar token cada 60 seg
+    setInterval(() => {
+      keycloak.updateToken(30).then(refreshed => {
+        if (refreshed) {
+          tokenActivo = keycloak.token;
+          console.log("[DEBUG] Token actualizado");
+        }
+      }).catch(console.error);
     }, 60000);
 
     async function cargarSolicitudes() {
@@ -84,28 +84,28 @@
         const resp = await axios.get("https://www.lakautac.com.ar/firma-api/solicitudes", {
           headers: { Authorization: `Bearer ${tokenActivo}` }
         });
-        const select = document.getElementById("solicitudesSelect");
-        select.innerHTML = "";
+        const sel = document.getElementById("solicitudesSelect");
+        sel.innerHTML = "";
         Object.entries(resp.data).forEach(([id, desc]) => {
           const opt = document.createElement("option");
           opt.value = id;
-          opt.textContent = `${id} - ${desc}`;
-          select.appendChild(opt);
+          opt.text = `${id} - ${desc}`;
+          sel.appendChild(opt);
         });
-        statusDiv.innerText = "Solicitudes cargadas.";
-      } catch (e) {
-        statusDiv.innerText = "Error al cargar solicitudes.";
-        console.error("Error:", e);
+      } catch (err) {
+        console.error("Error cargando solicitudes:", err);
+        status.innerText = "❌ Error al obtener solicitudes.";
       }
     }
 
-    document.getElementById("btnRefreshSolicitudes").addEventListener("click", cargarSolicitudes);
-
-    document.getElementById("firmaForm").addEventListener("submit", async e => {
+    document.getElementById("firmaForm").onsubmit = async (e) => {
       e.preventDefault();
-      const file = document.getElementById("pdfFile").files[0];
-      const clave = document.getElementById("clave").value;
+
+      const pdf = document.getElementById("pdfFile").files[0];
+      const pass = document.getElementById("clave").value;
       const solicitudId = parseInt(document.getElementById("solicitudesSelect").value, 10);
+
+      if (!pdf || !pass || !solicitudId) return alert("Completa todos los campos");
 
       const options = {
         solicitudId,
@@ -119,35 +119,33 @@
         y: 100,
         certificateOptions: {},
         restriccion: "NO_VALUE",
-        password: clave
+        password: pass
       };
 
+      document.getElementById("optionsPreview").value = JSON.stringify({ ...options, password: "[OCULTA]" }, null, 2);
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", pdf);
       formData.append("options", JSON.stringify(options));
 
       try {
         const resp = await axios.post("https://www.lakautac.com.ar/firma-api/solicitudes/firmar", formData, {
-          headers: {
-            Authorization: `Bearer ${tokenActivo}`
-          },
-          responseType: "blob"
+          headers: { Authorization: `Bearer ${tokenActivo}` },
+          responseType: 'arraybuffer'
         });
 
         const blob = new Blob([resp.data], { type: "application/pdf" });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "documento_firmado.pdf";
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        alert("Documento firmado correctamente");
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = "documento_firmado.pdf";
+        link.click();
+
+        alert("✅ Documento firmado correctamente.");
       } catch (err) {
         console.error("Error al firmar:", err);
-        alert("Error al firmar el documento");
+        alert("❌ Error al firmar el documento.");
       }
-    });
+    };
   </script>
 </body>
 </html>
