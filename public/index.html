@@ -1,409 +1,153 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8" />
-  <title>Firma Digital - Opciones Dinámicas</title>
-
-  <!-- Tailwind CSS (CDN) - para prototipos -->
+  <title>Demo Firma Digital</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Flowbite - para componentes interactivos -->
   <script src="https://unpkg.com/flowbite@1.6.5/dist/flowbite.js"></script>
-  <!-- Axios - para peticiones HTTP -->
   <script src="https://cdn.jsdelivr.net/npm/axios@1.3.4/dist/axios.min.js"></script>
 </head>
 
 <body class="bg-gray-50 text-gray-800">
-  <!-- Encabezado con logout -->
-  <header class="bg-white shadow p-4 flex items-center justify-between">
-    <h1 class="text-xl font-bold">Demo Firma Digital</h1>
-    <button id="btnLogout" class="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
-      Cerrar Sesión
-    </button>
+  <header class="bg-white shadow p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold">Firma Digital Demo</h1>
+    <button id="btnLogout" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Cerrar sesión</button>
   </header>
 
-  <!-- Mensajes de estado / debug -->
-  <section class="container mx-auto mt-6 px-4">
-    <div id="status" class="text-sm text-gray-700">
-      Inicializando Keycloak...
-    </div>
-  </section>
+  <main class="container mx-auto mt-6 px-4">
+    <div id="status" class="text-sm text-gray-700 mb-4">Inicializando Keycloak...</div>
 
-  <!-- Contenido principal -->
-  <section class="container mx-auto mt-6 px-4 bg-white shadow-md rounded p-4">
-    <!-- Card para seleccionar la solicitud -->
     <div id="solicitudesCard" class="hidden mb-6">
-      <h2 class="text-lg font-semibold mb-2">Seleccionar Solicitud</h2>
-      <p class="text-sm mb-4 text-gray-600">
-        Si tienes varias solicitudes, elige el ID de la que usarás al firmar.
-      </p>
-      <div class="flex items-center gap-3">
-        <div class="w-72">
-          <label for="solicitudesSelect" class="block text-sm font-medium mb-1">
-            Solicitudes disponibles:
-          </label>
-          <select id="solicitudesSelect" class="border border-gray-300 rounded w-full p-2 text-sm">
-          </select>
-        </div>
-        <button id="btnRefreshSolicitudes" class="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 text-sm">
-          Refrescar
-        </button>
+      <label for="solicitudesSelect" class="block mb-2 text-sm font-medium">Solicitudes disponibles</label>
+      <select id="solicitudesSelect" class="border border-gray-300 rounded w-72 p-2 text-sm"></select>
+      <button id="btnRefreshSolicitudes" class="ml-4 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Refrescar</button>
+    </div>
+
+    <form id="firmaForm" class="hidden space-y-4">
+      <div>
+        <label for="pdfFile" class="block text-sm font-medium">Archivo PDF</label>
+        <input type="file" id="pdfFile" accept="application/pdf" required class="block w-full text-sm border rounded" />
       </div>
-      <hr class="my-4">
-    </div>
 
-    <!-- Formulario de firma -->
-    <div id="form-section" class="hidden">
-      <h2 class="text-lg font-semibold mb-4">Firmar Documento</h2>
+      <div>
+        <label for="clave" class="block text-sm font-medium">Clave del certificado</label>
+        <input type="password" id="clave" required class="block w-72 border p-2 rounded text-sm" />
+      </div>
 
-      <form id="firmaForm" class="space-y-4">
-        <!-- Subir PDF -->
-        <div>
-          <label for="pdfFile" class="block text-sm font-medium mb-1">
-            Documento PDF:
-          </label>
-          <input type="file" id="pdfFile" accept="application/pdf" required
-            class="block w-full text-sm text-gray-900 border border-gray-300 rounded" />
-        </div>
+      <div>
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Firmar Documento</button>
+      </div>
+    </form>
+  </main>
 
-        <!-- Clave del Certificado -->
-        <div>
-          <label for="clave" class="block text-sm font-medium mb-1">
-            Clave del certificado (requerida):
-          </label>
-          <input type="password" id="clave" required placeholder="Escribe tu clave"
-            class="block w-72 border border-gray-300 rounded p-2 text-sm" />
-        </div>
-
-        <!-- Acordeón para opciones - Flowbite -->
-        <div class="overflow-hidden" data-accordion="collapse" id="accordionOpciones">
-          <h2 id="heading-opciones">
-            <button type="button"
-              class="flex items-center justify-between w-full p-4 font-medium text-left text-gray-500 border border-gray-200 hover:bg-gray-100"
-              data-accordion-target="#body-opciones" aria-expanded="false" aria-controls="body-opciones">
-              <span class="text-md font-semibold">
-                Configurar Opciones de Firma
-              </span>
-              <svg data-accordion-icon class="w-6 h-6 shrink-0 transition-transform" fill="currentColor"
-                viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 
-                   0 011.08 1.04l-4.25 4.25a.75.75 
-                   0 01-1.06 0l-4.25-4.25a.75.75 
-                   0 01.02-1.06z" clip-rule="evenodd"></path>
-              </svg>
-            </button>
-          </h2>
-          <div id="body-opciones" class="hidden" aria-labelledby="heading-opciones">
-            <div class="p-4 border border-t-0 border-gray-200 grid grid-cols-2 gap-4">
-              <!-- fontColor -->
-              <div>
-                <label for="optFontColor" class="block text-sm font-medium mb-1">fontColor</label>
-                <select id="optFontColor" class="border border-gray-300 rounded w-full p-2 text-sm">
-                  <option value="BLACK">BLACK</option>
-                  <option value="BLUE">BLUE</option>
-                  <option value="RED">RED</option>
-                  <option value="GRAY">GRAY</option>
-                </select>
-              </div>
-              <!-- fontName -->
-              <div>
-                <label for="optFontName" class="block text-sm font-medium mb-1">fontName</label>
-                <select id="optFontName" class="border border-gray-300 rounded w-full p-2 text-sm">
-                  <option value="Serif">Serif</option>
-                  <option value="Sans">Sans</option>
-                  <option value="Monospaced">Monospaced</option>
-                </select>
-              </div>
-              <!-- fontSize -->
-              <div>
-                <label for="optFontSize" class="block text-sm font-medium mb-1">fontSize</label>
-                <input type="number" id="optFontSize" class="border border-gray-300 rounded w-full p-2 text-sm"
-                  value="12" />
-              </div>
-              <!-- fontStyle -->
-              <div>
-                <label for="optFontStyle" class="block text-sm font-medium mb-1">fontStyle</label>
-                <select id="optFontStyle" class="border border-gray-300 rounded w-full p-2 text-sm">
-                  <option value="PLAIN">PLAIN</option>
-                  <option value="BOLD">BOLD</option>
-                  <option value="ITALIC">ITALIC</option>
-                </select>
-              </div>
-              <!-- page -->
-              <div>
-                <label for="optPage" class="block text-sm font-medium mb-1">page</label>
-                <input type="number" id="optPage" class="border border-gray-300 rounded w-full p-2 text-sm" value="1" />
-              </div>
-              <!-- zoomPercent -->
-              <div>
-                <label for="optZoom" class="block text-sm font-medium mb-1">zoomPercent</label>
-                <input type="number" id="optZoom" class="border border-gray-300 rounded w-full p-2 text-sm"
-                  value="100" />
-              </div>
-              <!-- x -->
-              <div>
-                <label for="optX" class="block text-sm font-medium mb-1">x</label>
-                <input type="number" id="optX" class="border border-gray-300 rounded w-full p-2 text-sm" value="100" />
-              </div>
-              <!-- y -->
-              <div>
-                <label for="optY" class="block text-sm font-medium mb-1">y</label>
-                <input type="number" id="optY" class="border border-gray-300 rounded w-full p-2 text-sm" value="100" />
-              </div>
-            </div>
-          </div>
-        </div><!-- Fin acordeón -->
-
-        <!-- Botón para actualizar vista previa -->
-        <button type="button" id="btnUpdateOptions"
-          class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 text-sm">
-          Previsualizar / Actualizar Options
-        </button>
-
-        <!-- Vista previa de JSON (sin exponer la password) -->
-        <div>
-          <label class="block text-sm font-medium mt-4 mb-1">
-            Vista previa de "options" (clave oculta):
-          </label>
-          <textarea id="optionsPreview" rows="6"
-            class="block w-full border border-gray-300 rounded p-2 text-sm bg-gray-50" readonly></textarea>
-        </div>
-
-        <!-- Botón para firmar -->
-        <div>
-          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-            Firmar Documento
-          </button>
-        </div>
-      </form>
-    </div>
-  </section>
-
-  <!-- Keycloak JS - Versión 26.2.0 como ES Module -->
   <script type="module">
-    // Importar Keycloak como ES module
     import Keycloak from 'https://cdn.jsdelivr.net/npm/keycloak-js@26.2.0/+esm';
-    
-    console.log('Keycloak.js 26.2.0 cargado correctamente como ES module');
 
-    // ==============
-    // 1) Keycloak
-    // ==============
-    const keycloak = new Keycloak('./keycloak.json');
-    let tokenActivo = "";
-
-    document.getElementById("btnLogout").addEventListener("click", () => {
-      keycloak.logout();
+    const keycloak = new Keycloak({
+      url: "https://www.lakautac.com.ar/auth",
+      realm: "firmanube",
+      clientId: "firmanube-web"
     });
 
     const statusDiv = document.getElementById("status");
-    
-    // Configuración para Keycloak 26 - Más simple y robusta
-    keycloak.init({
-      onLoad: 'login-required',
-      checkLoginIframe: false,
-      pkceMethod: 'S256'  // PKCE es recomendado en versiones nuevas
-    })
-    .then(authenticated => {
-      console.log("[DEBUG] Keycloak 26.2.0 init exitoso!");
-      console.log("[DEBUG] Authenticated:", authenticated);
-      console.log("[DEBUG] Token:", keycloak.token ? "EXISTS" : "MISSING");
-      
-      if (authenticated && keycloak.token) {
-        console.log("[DEBUG] ✅ Login exitoso con Keycloak 26.2.0");
-        statusDiv.innerText = "Autenticado con éxito. Cargando solicitudes...";
-        tokenActivo = keycloak.token;
-        
-        document.getElementById("solicitudesCard").classList.remove("hidden");
-        document.getElementById("form-section").classList.remove("hidden");
-        cargarSolicitudes();
-      } else {
-        console.log("[DEBUG] ❌ No autenticado");
-        statusDiv.innerText = "Error de autenticación.";
-      }
-    })
-    .catch(err => {
-      console.error("[DEBUG] Error Keycloak 26.2.0:", err);
-      statusDiv.innerHTML = `
-        <div>Error: ${err.message || String(err)}</div>
-        <button onclick="location.reload()" class="mt-2 bg-blue-500 text-white px-3 py-1 rounded">
-          Reintentar
-        </button>
-      `;
-    });
+    let tokenActivo = "";
 
-    // Renovar token cada 60 seg
+    document.getElementById("btnLogout").addEventListener("click", () => keycloak.logout());
+
+    keycloak.init({ onLoad: 'login-required', pkceMethod: 'S256', checkLoginIframe: false })
+      .then(authenticated => {
+        if (authenticated && keycloak.token) {
+          tokenActivo = keycloak.token;
+          document.getElementById("solicitudesCard").classList.remove("hidden");
+          document.getElementById("firmaForm").classList.remove("hidden");
+          statusDiv.innerText = "Autenticado. Cargando solicitudes...";
+          cargarSolicitudes();
+        } else {
+          statusDiv.innerText = "Autenticación fallida.";
+        }
+      })
+      .catch(err => {
+        console.error("Error al inicializar Keycloak:", err);
+        statusDiv.innerText = "Error al conectar con el servidor de autenticación.";
+      });
+
     setInterval(() => {
       if (keycloak.token) {
-        keycloak.updateToken(30)
-          .then(refreshed => {
-            if (refreshed) {
-              console.log("[DEBUG] Token renovado automáticamente");
-              tokenActivo = keycloak.token;
-            }
-          })
-          .catch(err => {
-            console.error("[DEBUG] No se pudo renovar el token:", err);
-          });
+        keycloak.updateToken(30).then(refreshed => {
+          if (refreshed) tokenActivo = keycloak.token;
+        }).catch(err => console.warn("Token refresh error", err));
       }
     }, 60000);
 
-    // ================================
-    // 2) Cargar solicitudes con Axios
-    // ================================
     async function cargarSolicitudes() {
-      console.log("[DEBUG] Cargando solicitudes...");
       try {
-        // URL con www para que coincida con Keycloak
         const resp = await axios.get("https://www.lakautac.com.ar/firma-api/solicitudes", {
           headers: { Authorization: `Bearer ${tokenActivo}` }
         });
-        console.log("[DEBUG] Solicitudes recibidas:", resp.data);
-        statusDiv.innerText = "Solicitudes cargadas correctamente.";
-        mostrarSolicitudes(resp.data);
-      } catch (error) {
-        if (error.response) {
-          statusDiv.innerText = `Error al obtener solicitudes: ${error.response.status}`;
-          console.error("[DEBUG] GET /solicitudes error:", error.response.status, error.response.data);
-        } else {
-          statusDiv.innerText = "Error de red al obtener solicitudes.";
-          console.error("[DEBUG] Network error:", error);
-        }
+        const select = document.getElementById("solicitudesSelect");
+        select.innerHTML = "";
+        Object.entries(resp.data).forEach(([id, desc]) => {
+          const opt = document.createElement("option");
+          opt.value = id;
+          opt.textContent = `${id} - ${desc}`;
+          select.appendChild(opt);
+        });
+        statusDiv.innerText = "Solicitudes cargadas.";
+      } catch (e) {
+        statusDiv.innerText = "Error al cargar solicitudes.";
+        console.error("Error:", e);
       }
-    }
-
-    function mostrarSolicitudes(solicitudesObj) {
-      const sel = document.getElementById("solicitudesSelect");
-      sel.innerHTML = "";
-      Object.entries(solicitudesObj).forEach(([id, desc]) => {
-        const option = document.createElement("option");
-        option.value = id;
-        option.text = `${id} - ${desc}`;
-        sel.appendChild(option);
-      });
     }
 
     document.getElementById("btnRefreshSolicitudes").addEventListener("click", cargarSolicitudes);
 
-    // =================================
-    // 3) Manejo de objeto "options"
-    // =================================
-    let optionsObj = {
-      solicitudId: 0,
-      fontColor: "BLACK",
-      fontName: "Serif",
-      fontSize: 12,
-      fontStyle: "PLAIN",
-      page: 1,
-      zoomPercent: 100,
-      x: 100,
-      y: 100,
-      certificateOptions: {},
-      restriccion: "NO_VALUE"
-    };
-
-    const previewArea = document.getElementById("optionsPreview");
-    const btnUpdateOptions = document.getElementById("btnUpdateOptions");
-    const solicitudesSelect = document.getElementById("solicitudesSelect");
-
-    function updateOptionsFromUI() {
-      // Tomar la solicitud elegida
-      optionsObj.solicitudId = parseInt(solicitudesSelect.value, 10) || 0;
-
-      // Tomar valores de inputs (accordion)
-      optionsObj.fontColor = document.getElementById("optFontColor").value;
-      optionsObj.fontName = document.getElementById("optFontName").value;
-      optionsObj.fontSize = parseInt(document.getElementById("optFontSize").value, 10) || 12;
-      optionsObj.fontStyle = document.getElementById("optFontStyle").value;
-      optionsObj.page = parseInt(document.getElementById("optPage").value, 10) || 1;
-      optionsObj.zoomPercent = parseInt(document.getElementById("optZoom").value, 10) || 100;
-      optionsObj.x = parseInt(document.getElementById("optX").value, 10) || 100;
-      optionsObj.y = parseInt(document.getElementById("optY").value, 10) || 100;
-
-      // Clave se maneja aparte, no la ponemos en la preview
-      const previewCopy = { ...optionsObj, password: "[OCULTA]" };
-      previewArea.value = JSON.stringify(previewCopy, null, 2);
-
-      console.log("[DEBUG] Options actualizadas (sin password):", previewCopy);
-    }
-
-    // Actualizar previsualización al hacer clic
-    btnUpdateOptions.addEventListener("click", updateOptionsFromUI);
-
-    // =================================
-    // 4) Manejo de envío (POST /firmar)
-    // =================================
-    const firmaForm = document.getElementById("firmaForm");
-    firmaForm.addEventListener("submit", async (e) => {
+    document.getElementById("firmaForm").addEventListener("submit", async e => {
       e.preventDefault();
-      console.log("[DEBUG] Iniciando proceso de firma...");
+      const file = document.getElementById("pdfFile").files[0];
+      const clave = document.getElementById("clave").value;
+      const solicitudId = parseInt(document.getElementById("solicitudesSelect").value, 10);
 
-      // 1) Archivo PDF
-      const pdfFile = document.getElementById("pdfFile").files[0];
-      if (!pdfFile) {
-        alert("Por favor, selecciona un archivo PDF.");
-        return;
-      }
+      const options = {
+        solicitudId,
+        fontColor: "BLACK",
+        fontName: "Serif",
+        fontSize: 12,
+        fontStyle: "PLAIN",
+        page: 1,
+        zoomPercent: 100,
+        x: 100,
+        y: 100,
+        certificateOptions: {},
+        restriccion: "NO_VALUE",
+        password: clave
+      };
 
-      // 2) Clave del certificado
-      const pass = document.getElementById("clave").value;
-      if (!pass) {
-        alert("La clave del certificado es obligatoria.");
-        return;
-      }
-
-      // 3) Actualizar optionsObj desde la UI (para reflejar solicitudId y demás)
-      updateOptionsFromUI();
-
-      // 4) Asignar la contraseña real a optionsObj
-      optionsObj.password = pass;
-
-      console.log("[DEBUG] optionsObj final a enviar:", optionsObj);
-
-      // 5) Crear FormData
       const formData = new FormData();
-      formData.append("file", pdfFile, pdfFile.name);
-      formData.append("options", JSON.stringify(optionsObj));
+      formData.append("file", file);
+      formData.append("options", JSON.stringify(options));
 
-      // 6) POST /solicitudes/firmar con Axios
       try {
-        // URL con www para que coincida con Keycloak
-        const urlFirma = "https://www.lakautac.com.ar/firma-api/solicitudes/firmar";
-        console.log("[DEBUG] POST =>", urlFirma);
-
-        const resp = await axios.post(urlFirma, formData, {
+        const resp = await axios.post("https://www.lakautac.com.ar/firma-api/solicitudes/firmar", formData, {
           headers: {
             Authorization: `Bearer ${tokenActivo}`
           },
-          responseType: "arraybuffer" // Recibir PDF binario
+          responseType: "blob"
         });
 
-        console.log("[DEBUG] Respuesta status:", resp.status);
-        if (resp.status !== 200) {
-          alert(`Error al firmar: ${resp.status}`);
-          return;
-        }
-
-        // 7) Descargar el PDF firmado
         const blob = new Blob([resp.data], { type: "application/pdf" });
-        console.log("[DEBUG] Tamaño PDF firmado:", blob.size);
-
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = "documento_firmado.pdf";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        alert("Firma realizada con éxito. Se descargó el PDF firmado.");
-      } catch (error) {
-        if (error.response) {
-          console.error("[DEBUG] Error al firmar:", error.response.status, error.response.data);
-          alert(`Error al firmar: ${error.response.status} - ${error.response.data}`);
-        } else {
-          console.error("[DEBUG] Error de red:", error);
-          alert("Error de red al firmar: " + error);
-        }
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "documento_firmado.pdf";
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        alert("Documento firmado correctamente");
+      } catch (err) {
+        console.error("Error al firmar:", err);
+        alert("Error al firmar el documento");
       }
     });
   </script>
+</body>
+</html>
