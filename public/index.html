@@ -212,51 +212,156 @@
 
   <script>
     // ==============
-    // 1) Keycloak
+    // 1) Keycloak con configuración corregida
     // ==============
-    const keycloak = new Keycloak('./keycloak.json');
+    const keycloak = new Keycloak({
+      url: 'https://www.lakautac.com.ar/auth',
+      realm: 'firmanube',
+      clientId: 'LakautNubeAPI'
+    });
     let tokenActivo = "";
 
+    // Debugging inicial
+    console.log('[DEBUG] Inicializando Keycloak...');
+    console.log('[DEBUG] URL actual:', window.location.href);
+
+    // Verificar si estamos en un callback para evitar bucles
+    const esCallback = window.location.href.includes('#') || 
+                      window.location.search.includes('state=') ||
+                      window.location.search.includes('code=');
+
+    console.log('[DEBUG] ¿Es callback?', esCallback);
+
     document.getElementById("btnLogout").addEventListener("click", () => {
-      keycloak.logout();
+        console.log('[DEBUG] Logout solicitado');
+        keycloak.logout({
+            redirectUri: 'http://localhost:3000'
+        });
     });
 
     const statusDiv = document.getElementById("status");
+
     keycloak.init({
-      onLoad: 'login-required',
-      checkLoginIframe: false
+        onLoad: 'login-required',
+        checkLoginIframe: false,
+        pkceMethod: 'S256', // Añadir PKCE para mayor seguridad
+        flow: 'standard' // Usar el flujo estándar
     })
     .then(authenticated => {
-      if (authenticated) {
-        statusDiv.innerText = "Autenticado con éxito. Cargando solicitudes...";
-        tokenActivo = keycloak.token;
-        // Mostrar secciones
-        document.getElementById("solicitudesCard").classList.remove("hidden");
-        document.getElementById("form-section").classList.remove("hidden");
-        // Cargar solicitudes
-        cargarSolicitudes();
-      } else {
-        statusDiv.innerText = "No se pudo autenticar con Keycloak.";
-      }
+        console.log('[DEBUG] Keycloak inicializado. Autenticado:', authenticated);
+        console.log('[DEBUG] Token presente:', !!keycloak.token);
+        
+        if (authenticated) {
+            console.log('[DEBUG] Usuario autenticado exitosamente');
+            console.log('[DEBUG] Usuario:', keycloak.tokenParsed?.preferred_username);
+            console.log('[DEBUG] Email:', keycloak.tokenParsed?.email);
+            console.log('[DEBUG] Roles:', keycloak.tokenParsed?.realm_access?.roles);
+            
+            statusDiv.innerText = "Autenticado con éxito. Cargando solicitudes...";
+            tokenActivo = keycloak.token;
+            
+            // Mostrar secciones
+            const solicitudesCard = document.getElementById("solicitudesCard");
+            const formSection = document.getElementById("form-section");
+            
+            if (solicitudesCard) solicitudesCard.classList.remove("hidden");
+            if (formSection) formSection.classList.remove("hidden");
+            
+            // Cargar solicitudes
+            if (typeof cargarSolicitudes === 'function') {
+                cargarSolicitudes();
+            } else {
+                console.warn('[DEBUG] Función cargarSolicitudes no encontrada');
+            }
+            
+        } else {
+            console.log('[DEBUG] Usuario NO autenticado');
+            statusDiv.innerText = "Redirigiendo al login...";
+            // No hacer nada aquí, Keycloak ya redirigirá automáticamente
+        }
     })
     .catch(err => {
-      statusDiv.innerText = "Error al inicializar Keycloak: " + err;
-      console.error("[DEBUG] Keycloak error:", err);
+        console.error("[DEBUG] Error completo en Keycloak.init:", err);
+        statusDiv.innerText = "Error al inicializar Keycloak. Ver consola.";
+        
+        // Análisis detallado del error
+        if (err.error) {
+            console.error('[DEBUG] Tipo de error:', err.error);
+            console.error('[DEBUG] Descripción:', err.error_description);
+            
+            // Manejar errores específicos
+            if (err.error === 'invalid_request') {
+                statusDiv.innerText = "Error de configuración. Revisa las URLs en Keycloak.";
+            } else if (err.error === 'access_denied') {
+                statusDiv.innerText = "Acceso denegado.";
+            }
+        }
+        
+        // Si hay un bucle, limpiar y reiniciar
+        if (window.location.href.includes('iss=') && 
+            (window.location.href.match(/iss=/g) || []).length > 5) {
+            console.error('[DEBUG] Detectado bucle infinito, limpiando...');
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = 'http://localhost:3000';
+        }
     });
 
-    // Renovar token cada 60 seg
-    setInterval(() => {
-      keycloak.updateToken(30)
-        .then(refreshed => {
-          if (refreshed) {
-            console.log("[DEBUG] Token renovado automáticamente");
-            tokenActivo = keycloak.token;
-          }
-        })
-        .catch(err => {
-          console.error("[DEBUG] No se pudo renovar el token:", err);
-        });
-    }, 60000);
+    // Renovar token automáticamente con mejor manejo
+    let tokenRenewalInterval = setInterval(() => {
+        if (keycloak?.authenticated) {
+            console.log('[DEBUG] Verificando renovación de token...');
+            
+            keycloak.updateToken(30) // Renovar si expira en menos de 30 segundos
+            .then(refreshed => {
+                if (refreshed) {
+                    console.log("[DEBUG] Token renovado automáticamente");
+                    tokenActivo = keycloak.token;
+                } else {
+                    console.log("[DEBUG] Token aún válido");
+                }
+            })
+            .catch(err => {
+                console.error("[DEBUG] Error al renovar token:", err);
+                console.log("[DEBUG] Redirigiendo al login...");
+                
+                // Limpiar interval antes de redireccionar
+                clearInterval(tokenRenewalInterval);
+                
+                // Forzar nuevo login
+                keycloak.login();
+            });
+        }
+    }, 60000); // Cada 60 segundos
+
+    // Función de utilidad para debugging
+    window.debugKeycloak = function() {
+        console.log('=== DEBUG KEYCLOAK STATE ===');
+        console.log('Autenticado:', keycloak?.authenticated);
+        console.log('Token presente:', !!keycloak?.token);
+        console.log('Token expira:', new Date(keycloak?.tokenParsed?.exp * 1000));
+        console.log('Usuario:', keycloak?.tokenParsed?.preferred_username);
+        console.log('Roles:', keycloak?.tokenParsed?.realm_access?.roles);
+        console.log('Client ID:', keycloak?.clientId);
+        console.log('Realm:', keycloak?.realm);
+        console.log('URL actual:', window.location.href);
+        console.log('============================');
+    };
+
+    // Función para limpiar estado en caso de problemas
+    window.limpiarKeycloak = function() {
+        console.log('[DEBUG] Limpiando estado de Keycloak...');
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = 'http://localhost:3000';
+    };
+
+    // Auto-debug después de 3 segundos
+    setTimeout(() => {
+        if (window.debugKeycloak) {
+            window.debugKeycloak();
+        }
+    }, 3000);
 
     // ================================
     // 2) Cargar solicitudes con Axios
@@ -264,11 +369,8 @@
     async function cargarSolicitudes() {
       console.log("[DEBUG] Cargando solicitudes...");
       try {
-        const resp = await axios.get("https://desa.lakaut.com/firma-api/solicitudes", {
-          headers: { 
-            Authorization: `Bearer ${tokenActivo}`,
-            Accept: 'application/json'
-          }
+        const resp = await axios.get("https://lakautac.com.ar/firma-api/solicitudes", {
+          headers: { Authorization: `Bearer ${tokenActivo}` }
         });
         console.log("[DEBUG] Solicitudes recibidas:", resp.data);
         statusDiv.innerText = "Solicitudes cargadas.";
@@ -384,7 +486,7 @@
 
       // 6) POST /solicitudes/firmar con Axios
       try {
-        const urlFirma = "https://desa.lakaut.com/firma-api/solicitudes/firmar";
+        const urlFirma = "https://lakautac.com.ar/firma-api/solicitudes/firmar";
         console.log("[DEBUG] POST =>", urlFirma);
 
         const resp = await axios.post(urlFirma, formData, {
