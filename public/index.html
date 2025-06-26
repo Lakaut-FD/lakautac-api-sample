@@ -6,10 +6,16 @@
 
   <!-- Tailwind CSS (CDN) - para prototipos -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Flowbite - para componentes interactivos -->
+
+  <!-- Flowbite CSS -->
+  <link href="https://unpkg.com/flowbite@1.6.5/dist/flowbite.min.css" rel="stylesheet" />
+
+  <!-- Flowbite JS -->
   <script src="https://unpkg.com/flowbite@1.6.5/dist/flowbite.js"></script>
-  <!-- Axios - para peticiones HTTP -->
+
+  <!-- Axios -->
   <script src="https://cdn.jsdelivr.net/npm/axios@1.3.4/dist/axios.min.js"></script>
+
 </head>
 <body class="bg-gray-50 text-gray-800">
   <!-- Encabezado con logout -->
@@ -209,7 +215,13 @@
     // ==============
     // 1) Keycloak
     // ==============
-    const keycloak = new Keycloak('./keycloak.json');
+    //const keycloak = new Keycloak('./keycloak.json');
+
+    const keycloak = new Keycloak({
+      url: 'https://desa.lakaut.com/auth',
+      realm: 'firmanube',
+      clientId: 'LakautNubeAPI'
+    });
     let tokenActivo = "";
 
     document.getElementById("btnLogout").addEventListener("click", () => {
@@ -217,18 +229,18 @@
     });
 
     const statusDiv = document.getElementById("status");
+   
     keycloak.init({
       onLoad: 'login-required',
+      redirectUri: 'http://localhost:3000',
       checkLoginIframe: false
     })
     .then(authenticated => {
       if (authenticated) {
         statusDiv.innerText = "Autenticado con éxito. Cargando solicitudes...";
         tokenActivo = keycloak.token;
-        // Mostrar secciones
         document.getElementById("solicitudesCard").classList.remove("hidden");
         document.getElementById("form-section").classList.remove("hidden");
-        // Cargar solicitudes
         cargarSolicitudes();
       } else {
         statusDiv.innerText = "No se pudo autenticar con Keycloak.";
@@ -238,6 +250,7 @@
       statusDiv.innerText = "Error al inicializar Keycloak: " + err;
       console.error("[DEBUG] Keycloak error:", err);
     });
+
 
     // Renovar token cada 60 seg
     setInterval(() => {
@@ -259,7 +272,7 @@
     async function cargarSolicitudes() {
       console.log("[DEBUG] Cargando solicitudes...");
       try {
-        const resp = await axios.get("https://www.lakautac.com.ar/firma-api/solicitudes", {
+        const resp = await axios.get("https://desa.lakaut.com/firma-api/solicitudes", {
           headers: { Authorization: `Bearer ${tokenActivo}` }
         });
         console.log("[DEBUG] Solicitudes recibidas:", resp.data);
@@ -370,7 +383,7 @@
 
       // 6) POST /solicitudes/firmar con Axios
       try {
-        const urlFirma = "https://www.lakautac.com.ar/firma-api/solicitudes/firmar";
+        const urlFirma = "https://desa.lakaut.com/firma-api/solicitudes/firmar";
         console.log("[DEBUG] POST =>", urlFirma);
 
         const resp = await axios.post(urlFirma, formData, {
